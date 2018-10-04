@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun 25 11:27:45 2018
+________________________________________________
 
-@author: ch20g13
+PYTHON TONAL FXLMS ACTIVE CONTROLLER
+University of Southampton
+Institute of Sound and Vibration Research
+
+Programmed by Charlie House - July 2018
+Contact: c.house@soton.ac.uk
+________________________________________________
+
 """
 
 ##### IMPORTS #####
