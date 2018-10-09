@@ -7,7 +7,7 @@ PYTHON TONAL FXLMS ACTIVE CONTROLLER
 University of Southampton
 Institute of Sound and Vibration Research
 
-Programmed by Charlie House - July 2018
+Charlie House - September 2018
 Contact: c.house@soton.ac.uk
 ________________________________________________
 
@@ -22,7 +22,6 @@ import atexit
 import time
 from scipy.signal import lfilter, butter
 from guizero import App,PushButton,Slider,Text,CheckBox
-# from scipy.io import savemat
 
 ########## <<<<<<<<< VARIABLES >>>>>>>>> ##########
 # Audio Stream Variables
@@ -54,18 +53,17 @@ u = np.zeros((2,1))
 update = np.zeros((2,1))
 r = np.zeros((2,frame_size))
 
-# error_log = np.array([])
-
 ########## <<<<<<<<< FUNCTION DEFS >>>>>>>>> ##########
 
 
 # MAIN CALLBACK FUNCTION
 def playingCallback(in_data, frame_count, time_info, status):
-    audio_frame_int = np.frombuffer(in_data,dtype=np.float32)  # Convert Bytes to Numpy Array
     global u
     global last_t
     global control_gain
-    # global error_log
+    
+    # Input Processing
+    audio_frame_int = np.frombuffer(in_data,dtype=np.float32)  # Convert Bytes to Numpy Array
     
     # Extract Only Input Channel 1
     audio_frame = np.reshape(audio_frame_int, (frame_size, 2))
@@ -78,7 +76,7 @@ def playingCallback(in_data, frame_count, time_info, status):
     ref_cos = np.cos((2*np.pi*freq*t))
     last_t = last_t+frame_size
 
-    # # Calculate Output Signal for Current Sample 
+    # Calculate Output Signal for Current Sample 
     control_out = (ref_sine * u[0]) + (ref_cos * u[1])
     control_out = -control_out
 
@@ -99,13 +97,13 @@ def playingCallback(in_data, frame_count, time_info, status):
 
     out_mat = (control_out,ref_sine)    # Channel1 = Control, Channel2 = Primary
     out_mat = np.vstack(out_mat).reshape((-1,), order='F')
-    
-    # error_log = np.append(error_log,mic_in)
+
     # Ouput Processing
     out_data = out_mat.astype(np.float32)
     out_data = out_data.tobytes()
     return out_data, pyaudio.paContinue
 
+# Turn ANC on/off using tickbox
 def change_gain():
     global control_gain
     global u
@@ -119,7 +117,6 @@ def change_gain():
 
 def exit_function():
     stream.stop_stream()
-    # savemat('error_log.mat', {'error_log':error_log})
     print('Function Terminated')
 
 
