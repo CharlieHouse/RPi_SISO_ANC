@@ -7,7 +7,7 @@ measure_plant.py
 University of Southampton
 Institute of Sound and Vibration Research
 
-Programmed by Charlie House - September 2018
+Charlie House - September 2018
 Contact: c.house@soton.ac.uk
 ________________________________________________
 
@@ -20,7 +20,6 @@ import numpy as np
 import math
 import atexit
 import time
-from guizero import App,PushButton,Slider,Text,CheckBox
 from scipy.io import savemat
 import scipy.signal as sig
 
@@ -45,14 +44,15 @@ input_recording = np.zeros(((duration+1)*fs))
 noise_recording = np.zeros(((duration+1)*fs))
 # MAIN CALLBACK FUNCTION
 def playingCallback(in_data, frame_count, time_info, status):
-    audio_frame_int = np.frombuffer(in_data,dtype=np.float32)  # Convert Bytes to Numpy Array
     global last_t
     global input_recording
 
+    # Input Processing
+    audio_frame_int = np.frombuffer(in_data,dtype=np.float32)  # Convert Bytes to Numpy Array
     audio_frame = np.reshape(audio_frame_int, (frame_size, 2))
 
     mic_in = audio_frame[:,0]
-    mic_in = sig.lfilter(b, a, mic_in)  # APply HPF
+    mic_in = sig.lfilter(b, a, mic_in)  # Apply HPF
 
     # Record Input Channel 1
     input_recording[last_t : last_t+frame_size] = mic_in
@@ -61,17 +61,14 @@ def playingCallback(in_data, frame_count, time_info, status):
     t = np.arange(last_t,last_t + frame_size)/fs
     sine = np.sin((2*np.pi*freq*t))
     
-
     # Play & Save Noise Signals
     noise_recording[last_t : last_t+frame_size] = sine*gain
-
     last_t = last_t+frame_size
 
-    out_mat = (sine*gain,np.zeros(frame_size,))    # Channel1 = Control, Channel2 = Primary
-    out_mat = np.vstack(out_mat).reshape((-1,), order='F')
-
-
+    out_mat = (sine*gain,np.zeros(frame_size,))    # Channel1 = Control (Noise), Channel2 = Primary (Silence)
+    
     # Ouput Processing
+    out_mat = np.vstack(out_mat).reshape((-1,), order='F')
     out_data = out_mat.astype(np.float32)
     out_data = out_data.tobytes()
     return out_data, pyaudio.paContinue
@@ -95,13 +92,12 @@ stream = p.open(format = pyaudio.paFloat32,
 ########## <<<<<<<<< RUN >>>>>>>>> ##########
 
 
-def measure_plant(freq_in):
+def measure_plant(freq):
     global noise_recording
     global input_recording
-    global freq
-    freq = freq_in
+    
+    # Run Measurement
     print('Measuring Plant Response')
-
     print('Starting Tone')
     stream.start_stream()
     time.sleep(duration)
@@ -113,6 +109,7 @@ def measure_plant(freq_in):
     # noise_recording = noise_recording[1*fs:duration-2*fs]
     # input_recording = input_recording[1*fs:duration-2*fs]
 
+    # Calculate TF
     print('Calculating Transfer Function')
     nfft = 16384
     [f,sxy] = sig.csd(noise_recording,input_recording,fs=fs,window='hanning',nperseg=nfft,noverlap=nfft/2,nfft=nfft)
@@ -120,6 +117,7 @@ def measure_plant(freq_in):
     [f,coh] = sig.coherence(noise_recording, input_recording, fs=fs, window='hanning', nperseg=nfft, noverlap=nfft/2, nfft=nfft)
     H = np.divide(sxx,sxy)
 
+    # Extract Frequency from TF & Print
     freq_ind = idx = (np.abs(f - freq)).argmin()
     plant_est = H[freq_ind]
     print('Coherence:')
@@ -127,6 +125,7 @@ def measure_plant(freq_in):
     print('Plant Estimate')
     print(plant_est)
 
+    # Save
     print('Saving Data')
     savemat('plant.mat', {'mic':input_recording,'noise':noise_recording,'f':f,'H':H,'sxx':sxx,'sxy':sxy,'coh':coh})
     np.save('plantdata.npy',plant_est)
