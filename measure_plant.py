@@ -115,7 +115,7 @@ def measure_plant(freq):
     [f,sxy] = sig.csd(noise_recording,input_recording,fs=fs,window='hanning',nperseg=nfft,noverlap=nfft/2,nfft=nfft)
     [f,sxx] = sig.welch(noise_recording,fs=fs,window='hanning',nperseg=nfft,noverlap=nfft/2,nfft=nfft)
     [f,coh] = sig.coherence(noise_recording, input_recording, fs=fs, window='hanning', nperseg=nfft, noverlap=nfft/2, nfft=nfft)
-    H = np.divide(sxx,sxy)
+    H = np.divide(sxy,sxx)
 
     # Extract Frequency from TF & Print
     freq_ind = idx = (np.abs(f - freq)).argmin()
